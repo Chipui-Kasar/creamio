@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Expand, Footprints, Hand, Minus, Plus, RotateCcw, Scissors } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Expand, Footprints, Minus, Plus, RotateCcw, Scissors } from "lucide-react";
 import Link from "next/link";
 import { VIEWS, VIEW_ORDER } from "@/data/shopLayout";
 import { useDevice } from "@/hooks/useDevice";
@@ -58,7 +58,6 @@ export function Shop3DScene({ fill = false }: { fill?: boolean }) {
   const [visible, setVisible] = useState(false);
   const [ready, setReady] = useState(false);
   const [engaged, setEngaged] = useState(false);
-  const [touchActive, setTouchActive] = useState(false);
 
   useEffect(() => {
     const el = box.current;
@@ -76,8 +75,10 @@ export function Shop3DScene({ fill = false }: { fill?: boolean }) {
   const onReady = useCallback(() => setReady(true), []);
 
   const walking = shop.view === "walk";
-  const interactive = !device.coarse || touchActive || walking;
-  const wheelZoom = device.coarse ? touchActive : engaged;
+  // phones: no gate — the embedded view orbits on horizontal drags, vertical drags scroll the page,
+  // pinch zooms. Full-page and walk-through take every gesture.
+  const touchScroll = device.coarse && !fill && !walking;
+  const wheelZoom = device.coarse ? true : engaged;
   const planMode = shop.view === "plan";
   const fullHref = `/shop?w=${shop.room.width}&d=${shop.room.depth}`;
   const zoom = (f: number) => window.dispatchEvent(new CustomEvent("shop-zoom", { detail: f }));
@@ -103,7 +104,8 @@ export function Shop3DScene({ fill = false }: { fill?: boolean }) {
               active={visible}
               lowPower={device.lowPower}
               reducedMotion={reduced}
-              interactive={interactive}
+              interactive
+              touchScroll={touchScroll}
               wheelZoom={wheelZoom}
               onReady={onReady}
             />
@@ -122,34 +124,34 @@ export function Shop3DScene({ fill = false }: { fill?: boolean }) {
 
       {ready && !walking && <PinLayer />}
 
-      {/* ── view presets ── */}
-      <div className="absolute left-3 right-3 top-3 z-20 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:left-4 sm:top-4">
-        {VIEW_ORDER.map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => shop.setView(v)}
-            aria-pressed={shop.view === v && !shop.selected}
-            title={VIEWS[v].hint}
-            className="chip"
-            data-on={shop.view === v && !shop.selected}
-          >
-            {VIEWS[v].label}
+      {/* ── view presets + scene toggles: two scrollable rows (never wrap over the scene) ── */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-1.5 p-3 sm:p-4">
+        <div className="no-scrollbar pointer-events-auto -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-0.5 sm:mx-0 sm:px-0" role="toolbar" aria-label="Camera views">
+          {VIEW_ORDER.map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => shop.setView(v)}
+              aria-pressed={shop.view === v && !shop.selected}
+              title={VIEWS[v].hint}
+              className="chip"
+              data-on={shop.view === v && !shop.selected}
+            >
+              {VIEWS[v].label}
+            </button>
+          ))}
+        </div>
+        <div className="no-scrollbar pointer-events-auto -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-0.5 sm:mx-0 sm:px-0" role="toolbar" aria-label="Scene options">
+          <button type="button" className="chip" data-on={shop.shutterOpen} aria-pressed={shop.shutterOpen} onClick={shop.toggleShutter}>
+            Shutter · {shop.shutterOpen ? "open" : "closed"}
           </button>
-        ))}
-      </div>
-
-      {/* ── openings + helpers ── */}
-      <div className="absolute left-3 top-[3.6rem] z-20 flex flex-wrap gap-1.5 sm:left-4 sm:top-[3.9rem]">
-        <button type="button" className="chip" data-on={shop.shutterOpen} aria-pressed={shop.shutterOpen} onClick={shop.toggleShutter}>
-          Shutter · {shop.shutterOpen ? "open" : "closed"}
-        </button>
-        <button type="button" className="chip" data-on={shop.dims} aria-pressed={shop.dims} onClick={shop.toggleDims}>
-          Dimensions
-        </button>
-        <button type="button" className="chip inline-flex items-center gap-1.5" onClick={shop.cutaway} title="Hide every wall except the back wall">
-          <Scissors size={12} /> Cutaway
-        </button>
+          <button type="button" className="chip" data-on={shop.dims} aria-pressed={shop.dims} onClick={shop.toggleDims}>
+            Dimensions
+          </button>
+          <button type="button" className="chip inline-flex items-center gap-1.5" onClick={shop.cutaway} title="Hide every wall except the back wall">
+            <Scissors size={12} /> Cutaway
+          </button>
+        </div>
       </div>
 
       {/* ── zoom / reset ── */}
@@ -172,15 +174,16 @@ export function Shop3DScene({ fill = false }: { fill?: boolean }) {
             <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-navy/70" />
             <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-navy/70" />
           </div>
-          <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center gap-2 sm:bottom-4">
-            <p className="bg-navy/90 px-3 py-2 text-center text-[10.5px] font-medium uppercase leading-relaxed tracking-[0.12em] text-cream">
-              <Footprints size={12} className="mr-1.5 inline -translate-y-px" />
-              W A S D / arrows move · Shift run · click &amp; drag to look · E interact
-            </p>
-            <button type="button" className="chip" onClick={() => shop.setView("overview")}>
-              Exit walk-through
-            </button>
-          </div>
+          <p className="pointer-events-none absolute bottom-4 left-1/2 z-20 hidden -translate-x-1/2 bg-navy/90 px-3 py-2 text-center text-[10.5px] font-medium uppercase leading-relaxed tracking-[0.12em] text-cream md:block">
+            <Footprints size={12} className="mr-1.5 inline -translate-y-px" />
+            W A S D / arrows move · Shift run · click &amp; drag to look · E interact
+          </p>
+          <p className="pointer-events-none absolute left-1/2 top-[6.4rem] z-20 -translate-x-1/2 bg-navy/85 px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-cream md:hidden">
+            Drag to look · pad to move
+          </p>
+          <button type="button" className="chip absolute bottom-3 right-3 z-20 sm:bottom-4 sm:right-4" onClick={() => shop.setView("overview")}>
+            Exit walk-through
+          </button>
           <div className="absolute bottom-3 left-3 z-20 grid select-none grid-cols-3 gap-1 sm:bottom-4 sm:left-4" aria-label="On-screen walk controls">
             {[
               { k: "tl", i: null },
@@ -216,25 +219,7 @@ export function Shop3DScene({ fill = false }: { fill?: boolean }) {
         </>
       )}
 
-      {/* ── hint / touch gate ── */}
-      {device.coarse && !touchActive && ready && !walking && (
-        <button
-          type="button"
-          onClick={() => setTouchActive(true)}
-          className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-navy px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-cream shadow-lg"
-        >
-          <Hand size={14} /> Tap to explore in 3D
-        </button>
-      )}
-      {device.coarse && touchActive && !walking && (
-        <button
-          type="button"
-          onClick={() => setTouchActive(false)}
-          className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-full bg-cream px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-navy shadow-lg"
-        >
-          Done · back to scrolling
-        </button>
-      )}
+      {/* ── full-page link + hint ── */}
       {!fill && !walking && (
         <Link
           href={fullHref}

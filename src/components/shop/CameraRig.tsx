@@ -20,8 +20,9 @@ interface Props {
   /** First-person mode: orbit controls are off and the walkthrough drives the camera. */
   walk: boolean;
   room: RoomDims;
-  /** When false the canvas lets touches scroll the page. */
   interactive: boolean;
+  /** One-finger vertical drags scroll the page (horizontal drags still orbit). */
+  touchScroll?: boolean;
   /** Wheel zoom only once the visitor has engaged with the canvas (no scroll-trapping). */
   wheelZoom: boolean;
   reducedMotion: boolean;
@@ -34,18 +35,22 @@ interface Props {
  * - Any user input cancels the flight.
  * - Rotation / distance / pan are clamped so you can never end up under the floor or lost in space.
  */
-export function CameraRig({ pose, nonce, planMode, walk, room, interactive, wheelZoom, reducedMotion }: Props) {
+export function CameraRig({ pose, nonce, planMode, walk, room, interactive, touchScroll, wheelZoom, reducedMotion }: Props) {
   const span = Math.max(room.width, room.depth) / 10;
   const PAN_LIMIT = { x: room.width / 2 + 1, zMin: -room.depth / 2 - 1, zMax: room.depth / 2 + 1, yMin: 0.5, yMax: 6.5 };
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, gl, invalidate } = useThree();
+  const size = useThree((s) => s.size);
+  // portrait screens see far less sideways, so stand further back (up to ~2.3×)
+  const aspect = size.width / Math.max(1, size.height);
+  const k = walk || aspect >= 1.05 ? 1 : Math.min(2.3, Math.pow(1.05 / aspect, 0.9));
   const goal = useRef({ pos: new THREE.Vector3(), target: new THREE.Vector3(), fov: 36 });
   const flying = useRef(false);
   const first = useRef(true);
 
   useEffect(() => {
-    goal.current.pos.set(...pose.position);
     goal.current.target.set(...pose.target);
+    goal.current.pos.set(...pose.position).sub(goal.current.target).multiplyScalar(k).add(goal.current.target);
     goal.current.fov = pose.fov ?? 36;
     const c = controls.current;
     if (first.current || reducedMotion) {
@@ -61,7 +66,7 @@ export function CameraRig({ pose, nonce, planMode, walk, room, interactive, whee
     }
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walk, nonce, pose.position[0], pose.position[1], pose.position[2], pose.target[0], pose.target[1], pose.target[2]]);
+  }, [k, walk, nonce, pose.position[0], pose.position[1], pose.position[2], pose.target[0], pose.target[1], pose.target[2]]);
 
   // on-screen zoom buttons dispatch `shop-zoom` with a distance factor
   useEffect(() => {
@@ -84,8 +89,8 @@ export function CameraRig({ pose, nonce, planMode, walk, room, interactive, whee
   // touch behaviour: let the page scroll unless the visitor opted in to interact
   useEffect(() => {
     const el = gl.domElement;
-    el.style.touchAction = interactive ? "none" : "pan-y";
-  }, [gl, interactive, planMode]);
+    el.style.touchAction = touchScroll ? "pan-y" : "none";
+  }, [gl, touchScroll, planMode]);
 
   useFrame((state, dt) => {
     const c = controls.current;
@@ -127,7 +132,7 @@ export function CameraRig({ pose, nonce, planMode, walk, room, interactive, whee
       enableZoom={wheelZoom}
       enableRotate={!planMode}
       minDistance={planMode ? 10 * span : 2.4}
-      maxDistance={(planMode ? 36 : 26) * span}
+      maxDistance={(planMode ? 36 : 26) * span * k}
       minPolarAngle={planMode ? 0 : 0.18}
       maxPolarAngle={Math.PI / 2 - 0.03}
       onStart={() => {

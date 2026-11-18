@@ -77,7 +77,8 @@ function Item({
 }
 
 /** Scale floor plan (SVG) — driven by the same layout as the 3D scene, so it follows the room size. */
-export function FloorPlan({ className = "", showLegend = true }: { className?: string; showLegend?: boolean }) {
+/** `fit` makes the plan scale down to fill a fixed-size frame (gallery) instead of its natural width. */
+export function FloorPlan({ className = "", showLegend = true, fit = false }: { className?: string; showLegend?: boolean; fit?: boolean }) {
   const shop = useShop();
   const { selected, hovered, visiCooler, layout: L, tableFolded } = shop;
   const { width: RW, depth: RD, hx, hz } = L.room;
@@ -105,8 +106,8 @@ export function FloorPlan({ className = "", showLegend = true }: { className?: s
   const aisleW = L.room.width / 2 - L.bx; // aisle spans bx → east wall
 
   return (
-    <figure className={className}>
-      <svg viewBox={`0 0 ${VW} ${VH}`} role="img" aria-label={`Scale floor plan of the ${RW} by ${RD} foot Creamio shop`} className="h-auto w-full select-none">
+    <figure className={`${fit ? "flex h-full min-h-0 w-full flex-col" : ""} ${className}`}>
+      <svg viewBox={`0 0 ${VW} ${VH}`} role="img" aria-label={`Scale floor plan of the ${RW} by ${RD} foot Creamio shop`} className={`select-none ${fit ? "min-h-0 w-full flex-1" : "h-auto w-full"}`}>
         <defs>
           <pattern id="fp-tile" width={S / 2} height={S / 2} patternUnits="userSpaceOnUse">
             <rect width={S / 2} height={S / 2} fill="#e6f4f0" />

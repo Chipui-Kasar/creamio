@@ -295,6 +295,44 @@ body {
   }
 }
 
+/* Touch devices: comfortable tap targets */
+@media (pointer: coarse) {
+  .chip {
+    min-height: 2.6rem;
+    padding-inline: 0.95rem;
+  }
+  .icon-btn {
+    width: 2.9rem;
+    height: 2.9rem;
+  }
+  .hotspot {
+    min-height: 2.1rem;
+  }
+  .hotspot__num {
+    width: 26px;
+    height: 26px;
+  }
+  .btn {
+    padding-block: 1.05rem;
+  }
+}
+@media (max-width: 640px) {
+  .chip {
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+  }
+  .wrap {
+    width: min(100% - 2rem, 78rem);
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Thin custom scrollbars inside panels */
 .thin-scroll {
   scrollbar-width: thin;

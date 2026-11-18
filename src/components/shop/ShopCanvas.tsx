@@ -22,6 +22,8 @@ interface Props {
   lowPower: boolean;
   reducedMotion: boolean;
   interactive: boolean;
+  /** Let a vertical one-finger drag scroll the page (embedded view on touch screens). */
+  touchScroll?: boolean;
   wheelZoom: boolean;
   /** Fired after the first frame has really been drawn. */
   onReady: () => void;
@@ -59,7 +61,7 @@ function ReadySignal({ onReady, active }: { onReady: () => void; active: boolean
   return null;
 }
 
-export default function ShopCanvas({ active, lowPower, reducedMotion, interactive, wheelZoom, onReady, overridePose, hidePins, quiet }: Props) {
+export default function ShopCanvas({ active, lowPower, reducedMotion, interactive, touchScroll, wheelZoom, onReady, overridePose, hidePins, quiet }: Props) {
   const shop = useShop();
   const planMode = shop.view === "plan";
   const walk = shop.view === "walk" && !overridePose;
@@ -123,6 +125,7 @@ export default function ShopCanvas({ active, lowPower, reducedMotion, interactiv
         walk={walk}
         room={L.room}
         interactive={interactive}
+        touchScroll={touchScroll}
         wheelZoom={wheelZoom}
         reducedMotion={reducedMotion}
       />

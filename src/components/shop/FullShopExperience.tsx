@@ -22,14 +22,20 @@ function UrlRoom() {
 }
 
 function Shell() {
+  const { view } = useShop();
   const [open, setOpen] = useState(true);
   useEffect(() => {
     // start with the panel closed on small screens so the 3D view leads
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (window.innerWidth < 1024) setOpen(false);
   }, []);
+  // on a phone the sheet would hide the walk-through — tuck it away
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (view === "walk" && window.innerWidth < 1024) setOpen(false);
+  }, [view]);
   return (
-    <div className="fixed inset-0 flex flex-col bg-cream">
+    <div className="fixed inset-0 flex flex-col bg-cream pt-[env(safe-area-inset-top)]">
       <header className="relative z-30 flex h-14 flex-none items-center justify-between border-b border-navy/15 bg-cream px-3 sm:px-5">
         <div className="awning absolute inset-x-0 top-0 !h-[5px]" aria-hidden />
         <div className="flex items-center gap-3">
@@ -46,7 +52,7 @@ function Shell() {
           </Link>
           <button type="button" className="btn btn-primary !px-3 !py-2 !text-[10.5px]" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
             {open ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
-            <span className="max-sm:hidden">{open ? "Hide panel" : "Equipment & room"}</span>
+            <span>{open ? "Hide" : "Panel"}<span className="max-sm:hidden">{open ? " panel" : " · equipment & room"}</span></span>
           </button>
         </div>
       </header>
@@ -54,12 +60,13 @@ function Shell() {
       <div className="relative min-h-0 flex-1">
         <Shop3DScene fill />
         <div
-          className={`absolute inset-x-0 bottom-0 z-30 border-t-[1.5px] border-navy bg-cream shadow-2xl transition-transform duration-300 ease-out max-lg:max-h-[62%] lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[24.5rem] lg:border-l-[1.5px] lg:border-t-0 ${
+          className={`absolute inset-x-0 bottom-0 z-30 border-t-[1.5px] border-navy bg-cream shadow-2xl transition-transform duration-300 ease-out max-lg:max-h-[58%] max-lg:pb-[env(safe-area-inset-bottom)] lg:inset-y-0 lg:left-auto lg:right-0 lg:w-[24.5rem] lg:border-l-[1.5px] lg:border-t-0 ${
             open ? "translate-y-0 lg:translate-x-0" : "translate-y-full lg:translate-x-full lg:translate-y-0"
           }`}
           aria-hidden={!open}
           inert={!open}
         >
+          <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-navy/25 lg:hidden" aria-hidden />
           <EquipmentPanel full />
         </div>
       </div>

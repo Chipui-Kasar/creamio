@@ -7,6 +7,7 @@ import { FloorPlan } from "@/components/shop/FloorPlan";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { DEFAULT_ROOM } from "@/data/shopLayout";
 import { useShop } from "@/hooks/useShop";
 import type { EquipmentId, SeatingConfig, ViewId } from "@/types";
 
@@ -47,7 +48,7 @@ const TABS: Tab[] = [
     label: "Customer seating",
     view: "seating",
     title: "Four seats, zero clutter",
-    text: "Two ways to seat four in a 10 × 12 ft room. The wall-mounted fold-down table is our pick — it frees about a third more floor and folds away at close.",
+    text: "Two ways to seat four in a compact room. The wall-mounted fold-down table is our pick — it frees about a third more floor and folds away at close.",
   },
   {
     id: "equipment",
@@ -63,7 +64,7 @@ const TABS: Tab[] = [
     label: "Floor plan",
     view: "plan",
     title: "To scale, and resizable",
-    text: "Every item on this plan is the same data that drives the 3D model — the default shop is 10 ft wide by 12 ft deep. Click an item to open it in the shop.",
+    text: `Every item on this plan is the same data that drives the 3D model — the default shop is ${DEFAULT_ROOM.width} ft wide by ${DEFAULT_ROOM.depth} ft deep. Click an item to open it in the shop.`,
   },
 ];
 
@@ -87,9 +88,9 @@ export function ShopGallery() {
           Renders of the shop from the places you will actually stand, plus the plan they were drawn from.
         </SectionHeading>
 
-        <div className="mt-12 grid gap-8 lg:mt-16 lg:grid-cols-[1fr_20rem] lg:gap-12">
+        <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-6 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-12">
           <Reveal>
-            <div className="relative aspect-[16/11] w-full overflow-hidden border-[1.5px] border-navy bg-cream shadow-[8px_8px_0_var(--color-navy)]">
+            <div className={`relative w-full overflow-hidden border-[1.5px] border-navy bg-cream shadow-[5px_5px_0_var(--color-navy)] sm:shadow-[8px_8px_0_var(--color-navy)] ${t.id === "plan" ? "aspect-[4/5] sm:aspect-[16/11]" : "aspect-[4/3] sm:aspect-[16/11]"}`}>
               <AnimatePresence mode="sync" initial={false}>
                 <motion.div
                   key={t.id + (t.id === "seating" ? seat : "")}
@@ -100,9 +101,9 @@ export function ShopGallery() {
                   transition={{ duration: 0.55 }}
                 >
                   {t.id === "plan" ? (
-                    <div className="grid h-full place-items-center bg-cream p-3 sm:p-5">
-                      <div className="h-full max-h-full w-full max-w-[44rem]">
-                        <FloorPlan className="h-full [&_svg]:max-h-[calc(100%-2.6rem)] [&_svg]:mx-auto" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-cream p-3 sm:p-5">
+                      <div className="h-full w-full min-w-0 max-w-[44rem]">
+                        <FloorPlan fit />
                       </div>
                     </div>
                   ) : (
@@ -128,8 +129,8 @@ export function ShopGallery() {
             </div>
           </Reveal>
 
-          <div className="flex flex-col">
-            <div role="tablist" aria-label="Interior views" className="divide-y divide-navy/15 border-y border-navy/20">
+          <div className="flex min-w-0 flex-col">
+            <div role="tablist" aria-label="Interior views" className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 lg:mx-0 lg:block lg:gap-0 lg:divide-y lg:divide-navy/15 lg:overflow-visible lg:border-y lg:border-navy/20 lg:px-0 lg:pb-0">
               {TABS.map((x, i) => (
                 <button
                   key={x.id}
@@ -137,10 +138,10 @@ export function ShopGallery() {
                   aria-selected={i === tab}
                   type="button"
                   onClick={() => setTab(i)}
-                  className="group flex w-full items-baseline gap-4 py-3.5 text-left"
+                  className="group flex flex-none items-baseline gap-2 border border-navy/20 px-3 py-2.5 text-left aria-selected:border-navy aria-selected:bg-navy aria-selected:text-cream lg:w-full lg:gap-4 lg:border-0 lg:px-0 lg:py-3.5 lg:aria-selected:bg-transparent lg:aria-selected:text-navy"
                 >
-                  <span className={`display text-xl transition-colors ${i === tab ? "text-pink" : "text-navy/35"}`}>0{i + 1}</span>
-                  <span className={`text-[12.5px] font-semibold uppercase tracking-[0.14em] transition-colors ${i === tab ? "text-navy" : "text-navy/60 group-hover:text-navy"}`}>
+                  <span className={`display text-lg transition-colors lg:text-xl ${i === tab ? "text-pink" : "text-navy/35"}`}>0{i + 1}</span>
+                  <span className={`whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors lg:text-[12.5px] lg:tracking-[0.14em] ${i === tab ? "text-inherit" : "text-navy/60 group-hover:text-navy"}`}>
                     {x.label}
                   </span>
                 </button>
